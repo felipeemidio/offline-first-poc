@@ -1,9 +1,8 @@
 import 'package:uuid/v4.dart';
 
-import 'package:offline_first_poc/models/synchronizable.dart';
 import 'package:uuid/validation.dart';
 
-class Note extends Synchronizable {
+class Note {
   final String id;
   final String content;
   final DateTime createdAt;
@@ -12,8 +11,6 @@ class Note extends Synchronizable {
     required this.id,
     required this.content,
     required this.createdAt,
-    super.isSync = false,
-    super.isDeleted = false,
   });
 
   factory Note.fromMap(Map<String, dynamic> map, {bool isSync = false}) {
@@ -21,8 +18,6 @@ class Note extends Synchronizable {
       id: map['id'] is num ? map['id'].toString() : map['id'],
       content: map['content'],
       createdAt: DateTime.parse(map['createdAt']),
-      isSync: map['isSync'] ?? isSync,
-      isDeleted: map['isDeleted'] ?? false,
     );
   }
 
@@ -41,8 +36,6 @@ class Note extends Synchronizable {
       'id': id,
       'content': content,
       'createdAt': createdAt.toIso8601String(),
-      'isSync': isSync,
-      'isDeleted': isDeleted,
     };
   }
 
@@ -57,8 +50,7 @@ class Note extends Synchronizable {
   int get hashCode => id.hashCode ^ content.hashCode ^ createdAt.hashCode;
 
   @override
-  String toString() =>
-      'Note(id: $id, content: $content, createdAt: ${createdAt.toIso8601String()}, isSync: $isSync, isDeleted: $isDeleted)';
+  String toString() => 'Note(id: $id, content: $content, createdAt: ${createdAt.toIso8601String()})';
 
   Note copyWith({
     String? id,
@@ -71,8 +63,6 @@ class Note extends Synchronizable {
       id: id ?? this.id,
       content: content ?? this.content,
       createdAt: createdAt ?? this.createdAt,
-      isSync: isSync ?? this.isSync,
-      isDeleted: isDeleted ?? this.isDeleted,
     );
   }
 }

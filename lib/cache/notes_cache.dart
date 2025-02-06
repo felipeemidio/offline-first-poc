@@ -15,7 +15,7 @@ class NotesCache {
       return;
     }
 
-    final localNotesJson = await _localStorageService.find(kNotesKey);
+    final localNotesJson = await _localStorageService.get(kNotesKey);
     final localNotesObj = jsonDecode(localNotesJson ?? '[]') as List;
     _localNotes = localNotesObj.map((e) => Note.fromMap(e)).toList();
     _isLoaded = true;

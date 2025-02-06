@@ -1,10 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:offline_first_poc/cache/notes_cache.dart';
 import 'package:offline_first_poc/datasources/api_datasource.dart';
 import 'package:offline_first_poc/models/note.dart';
 import 'package:offline_first_poc/repositories/note_repository.dart';
 import 'package:offline_first_poc/services/local_storage_service.dart';
+import 'package:offline_first_poc/services/syncronization_service.dart';
 import 'package:offline_first_poc/views/widgets/editing_bottom_sheet.dart';
 import 'package:offline_first_poc/views/widgets/note_tile.dart';
 
@@ -19,6 +19,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late final NoteRepository _noteRepository;
+  late final SyncronizationService _syncronizationService;
   final _addFieldController = TextEditingController();
   bool hasContentToAdd = false;
   bool isLoading = false;
@@ -27,9 +28,9 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    final cache = NotesCache(LocalStorageService());
-    _noteRepository = NoteRepository(ApiDatasource(), cache);
-    _noteRepository.sync();
+    final datasource = ApiDatasource();
+    _noteRepository = NoteRepository(datasource);
+    _syncronizationService = SyncronizationService(LocalStorageService(), datasource);
     _addFieldController.addListener(_updateAddAction);
     _getNotes();
   }
@@ -153,9 +154,14 @@ class _HomePageState extends State<HomePage> {
                 : () async {
                     isLoading = true;
                     setState(() {});
-                    await _noteRepository.reset();
-                    isLoading = false;
-                    setState(() {});
+                    try {
+                      await LocalStorageService().clear();
+                    } finally {
+                      if (mounted) {
+                        isLoading = false;
+                        setState(() {});
+                      }
+                    }
                   },
             icon: const Icon(
               Icons.auto_delete_outlined,
@@ -168,13 +174,19 @@ class _HomePageState extends State<HomePage> {
                 : () async {
                     isLoading = true;
                     setState(() {});
-                    await _noteRepository.sync();
-                    isLoading = false;
-                    setState(() {});
+                    try {
+                      await _syncronizationService.sync();
+                      await _getNotes();
+                    } catch (e) {
+                      if (mounted) {
+                        isLoading = false;
+                        setState(() {});
+                      }
+                    }
                   },
-            icon: const Icon(
+            icon: Icon(
               Icons.refresh,
-              color: Colors.white,
+              color: isLoading ? Colors.grey.withOpacity(0.5) : Colors.white,
             ),
           ),
         ],
@@ -214,22 +226,34 @@ class _HomePageState extends State<HomePage> {
                   );
                 }
                 if (notes.isEmpty) {
-                  return const Center(
-                    child: Text('You don\'t have a note. Try to create one!'),
+                  return Center(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('You don\'t have a note. Try to create one!'),
+                        const SizedBox(height: 24),
+                        IconButton(onPressed: _getNotes, icon: const Icon(Icons.refresh)),
+                      ],
+                    ),
                   );
                 }
 
-                return SingleChildScrollView(
-                  child: Column(
-                    children: notes.reversed
-                        .map(
-                          (note) => NoteTile(
-                            note: note,
-                            onDelete: () => _deleteNote(note),
-                            onEdit: () => _editNote(note),
-                          ),
-                        )
-                        .toList(),
+                return RefreshIndicator(
+                  onRefresh: _getNotes,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Column(
+                      children: notes.reversed
+                          .map(
+                            (note) => NoteTile(
+                              note: note,
+                              onDelete: () => _deleteNote(note),
+                              onEdit: () => _editNote(note),
+                            ),
+                          )
+                          .toList(),
+                    ),
                   ),
                 );
               }),
