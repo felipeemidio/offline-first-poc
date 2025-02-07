@@ -30,4 +30,14 @@ class LocalStorageService {
       return false;
     }
   }
+
+  Future<bool> clear() async {
+    try {
+      final box = await Hive.openBox<String>(_cachebox);
+      await box.clear();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
 }

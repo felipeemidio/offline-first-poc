@@ -153,9 +153,11 @@ class _HomePageState extends State<HomePage> {
                 : () async {
                     isLoading = true;
                     setState(() {});
-                    await _noteRepository.reset();
-                    isLoading = false;
-                    setState(() {});
+                    await _noteRepository.clear();
+                    if (mounted) {
+                      isLoading = false;
+                      setState(() {});
+                    }
                   },
             icon: const Icon(
               Icons.auto_delete_outlined,
@@ -169,8 +171,10 @@ class _HomePageState extends State<HomePage> {
                     isLoading = true;
                     setState(() {});
                     await _noteRepository.sync();
-                    isLoading = false;
-                    setState(() {});
+                    if (mounted) {
+                      isLoading = false;
+                      setState(() {});
+                    }
                   },
             icon: const Icon(
               Icons.refresh,
@@ -214,22 +218,33 @@ class _HomePageState extends State<HomePage> {
                   );
                 }
                 if (notes.isEmpty) {
-                  return const Center(
-                    child: Text('You don\'t have a note. Try to create one!'),
+                  return Center(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('You don\'t have a note. Try to create one!'),
+                        const SizedBox(height: 24),
+                        IconButton(onPressed: _getNotes, icon: const Icon(Icons.refresh)),
+                      ],
+                    ),
                   );
                 }
 
-                return SingleChildScrollView(
-                  child: Column(
-                    children: notes.reversed
-                        .map(
-                          (note) => NoteTile(
-                            note: note,
-                            onDelete: () => _deleteNote(note),
-                            onEdit: () => _editNote(note),
-                          ),
-                        )
-                        .toList(),
+                return RefreshIndicator(
+                  onRefresh: _getNotes,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: notes.reversed
+                          .map(
+                            (note) => NoteTile(
+                              note: note,
+                              onDelete: () => _deleteNote(note),
+                              onEdit: () => _editNote(note),
+                            ),
+                          )
+                          .toList(),
+                    ),
                   ),
                 );
               }),

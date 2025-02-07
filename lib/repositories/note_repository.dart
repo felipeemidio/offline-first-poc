@@ -82,7 +82,7 @@ class NoteRepository extends Repository {
     }
   }
 
-  Future<void> reset() async {
-    await _cache.reset();
+  Future<void> clear() async {
+    await _cache.clear();
   }
 }

@@ -73,8 +73,8 @@ class NotesCache {
     await _save();
   }
 
-  Future<void> reset() async {
-    await _localStorageService.remove(kNotesKey);
+  Future<void> clear() async {
+    await _localStorageService.clear();
     _localNotes = [];
   }
 }
