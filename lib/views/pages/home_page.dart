@@ -241,6 +241,7 @@ class _HomePageState extends State<HomePage> {
                               note: note,
                               onDelete: () => _deleteNote(note),
                               onEdit: () => _editNote(note),
+                              onSync: () => _noteRepository.sync(),
                             ),
                           )
                           .toList(),

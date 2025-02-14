@@ -10,56 +10,97 @@ class NoteRepository extends Repository {
   const NoteRepository(this._datasource, this._cache);
 
   Future<List<Note>> getAllNotes() async {
+    // Try to sync
     try {
       final response = await _datasource.httpClient.get('/notes');
       final notes = (response.data as List).map((e) => Note.fromMap(e, isSync: true)).toList();
       await _cache.saveNotes(notes);
-      return notes;
     } catch (e) {
-      if (isNoConnetionError(e)) {
-        return _cache.getNotes();
-      }
-      rethrow;
+      // handle the error
     }
+
+    // retrieve the local data
+    return _cache.getNotes();
   }
 
   Future<Note> getById(String id) async {
+    // Try to sync
     try {
       final response = await _datasource.httpClient.get('/notes/$id');
-      return Note.fromMap(response.data);
-    } catch (e) {
-      if (isNoConnetionError(e)) {
-        final note = await _cache.getById(id);
-        if (note != null) {
-          return note;
-        }
+      final note = Note.fromMap(response.data);
+      final existingNote = await _cache.getById(id);
+      if (existingNote != null) {
+        await _cache.editNote(note);
+      } else {
+        await _cache.saveNote(note);
       }
-      rethrow;
+    } catch (e) {
+      // handle the error
+    }
+
+    // retrieve the local data
+    final note = await _cache.getById(id);
+    if (note != null) {
+      return note;
+    } else {
+      throw Exception('Note not found');
     }
   }
 
   Future<Note> createNote(Note note) async {
-    await _cache.saveNote(note.copyWith(isSync: false));
-    final response = await _datasource.httpClient.post('/notes', data: {'content': note.content});
-    await _cache.editNote(note.copyWith(isSync: true));
-    return Note.fromMap(response.data);
+    // Save locally first
+    Note currentNote = note.copyWith(isSync: false);
+    await _cache.saveNote(currentNote);
+
+    // Try to sync
+    try {
+      final response = await _datasource.httpClient.post('/notes', data: {'content': note.content});
+      currentNote = Note.fromMap(response.data, isSync: true);
+      await _cache.editNote(currentNote);
+    } catch (e) {
+      // handle the error
+    }
+
+    // retrieve the local data
+    return currentNote;
   }
 
   Future<void> editNote(Note note) async {
+    // Save locally first
     await _cache.editNote(note.copyWith(isSync: false));
-    await _datasource.httpClient.put('/notes/${note.id}', data: {"content": note.content});
-    await _cache.editNote(note.copyWith(isSync: true));
+
+    // Try to sync
+    try {
+      await _datasource.httpClient.put('/notes/${note.id}', data: {"content": note.content});
+      await _cache.editNote(note.copyWith(isSync: true));
+    } catch (e) {
+      // handle the error
+    }
+
+    // has nothing to retrieve
   }
 
   Future<void> deleteNote(Note note) async {
+    // Save locally first
     await _cache.editNote(note.copyWith(isSync: false, isDeleted: true));
-    await _datasource.httpClient.delete('/notes/${note.id}');
-    await _cache.deleteNote(note);
+
+    // Try to sync
+    try {
+      await _datasource.httpClient.delete('/notes/${note.id}');
+      await _cache.deleteNote(note);
+    } catch (e) {
+      // handle the error
+    }
+
+    // has nothing to retrieve
   }
 
   @override
   Future<void> sync() async {
-    final allNotes = [...(await _cache.getNotes())];
+    // Create a copy of the list
+    final allNotes = List<Note>.from(await _cache.getNotes());
+
+    // Iterate to sync every unsync model
     for (Note note in allNotes) {
       if (note.isSync) {
         continue;

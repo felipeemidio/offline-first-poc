@@ -6,11 +6,13 @@ class NoteTile extends StatelessWidget {
   final Note note;
   final VoidCallback? onDelete;
   final VoidCallback? onEdit;
+  final VoidCallback? onSync;
   const NoteTile({
     super.key,
     required this.note,
     this.onDelete,
     this.onEdit,
+    this.onSync,
   });
 
   @override
@@ -47,12 +49,15 @@ class NoteTile extends StatelessWidget {
                 ],
               ),
             ),
-            if (!note.isSync)
+            if (!note.isSync && onSync != null)
               Padding(
                 padding: const EdgeInsets.only(left: 8),
-                child: Icon(
-                  Icons.sync_problem_outlined,
-                  color: Theme.of(context).disabledColor,
+                child: IconButton(
+                  onPressed: onSync,
+                  icon: Icon(
+                    Icons.sync_problem_outlined,
+                    color: Theme.of(context).disabledColor,
+                  ),
                 ),
               ),
             if (onEdit != null)
