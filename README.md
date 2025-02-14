@@ -1,16 +1,31 @@
-# offline_first_poc
+# Offline-First PoC Note App
 
-A new Flutter project.
+This project aims to be a didatic approach for an Offline-first app. It support the learnings taught in this [article](https://medium.com/@felipeemidio).
 
-## Getting Started
+A text note app to store your thoughts in remote places with no connection.
 
-This project is a starting point for a Flutter application.
+## Branches
 
-A few resources to get you started if this is your first Flutter project:
+The `master` branch refers to the "Local database" approach
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+The `cache-request` branch refers to the "Cache queries" and "Request queue" approaches.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Backend
+
+To make a functional PoC, a API in Go language was created. Checkout the code in this [link](https://github.com/felipeemidio/offline-first-api)
+
+If you intend to recreate this project, remember to replace the `BASE_URL` in the `api_datasource.dart` file
+
+## Running
+
+Make use of the API backend project
+
+```
+flutter pub get
+```
+
+```
+flutter run
+```
+
+
